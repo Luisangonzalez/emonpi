@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import lcddriver 
+import lcddriver
 lcd = lcddriver.lcd()
 from subprocess import *
 from time import sleep, strftime
@@ -12,11 +12,11 @@ import sys
 import RPi.GPIO as GPIO
 
 
-# Use Pi board pin numbers as these as always consistent between revisions 
-GPIO.setmode(GPIO.BOARD)                                 
+# Use Pi board pin numbers as these as always consistent between revisions
+GPIO.setmode(GPIO.BOARD)
 
 #emonPi LCD push button Pin 16 GPIO 23
-GPIO.setup(16, GPIO.IN, pull_up_down = GPIO.PUD_DOWN)    
+GPIO.setup(16, GPIO.IN, pull_up_down = GPIO.PUD_DOWN)
 #emonPi Shutdown button
 GPIO.setup(11, GPIO.IN)
 
@@ -32,7 +32,7 @@ def shutdown():
         sleep(1)
         for x in range(4, 0, -1):
             lcd_string2 += "%d.." % (x)
-            lcd.lcd_display_string( string_lenth(lcd_string2, 16),2) 
+            lcd.lcd_display_string( string_lenth(lcd_string2, 16),2)
             print lcd_string2
             sleep(1)
             
@@ -40,7 +40,7 @@ def shutdown():
                 return
         lcd_string2="SHUTDOWN NOW!"
         lcd.lcd_display_string( string_lenth(lcd_string1, 16),1)
-        lcd.lcd_display_string( string_lenth(lcd_string2, 16),2) 
+        lcd.lcd_display_string( string_lenth(lcd_string2, 16),2)
         sleep(2)
         lcd.backlight(0)
         lcd.lcd_clear()
@@ -48,19 +48,19 @@ def shutdown():
         lcd.lcd_display_string( string_lenth("Off", 16),2)
         sleep(2)
         call('halt', shell=False)
-        sys.exit() #end script 
+        sys.exit() #end script
 
 
 class ButtonInput():
     def __init__(self):
-        GPIO.add_event_detect(16, GPIO.RISING, callback=self.buttonPress, bouncetime=200) 
+        GPIO.add_event_detect(16, GPIO.RISING, callback=self.buttonPress, bouncetime=300)
         self.press_num = 0
     def buttonPress(self,channel):
         print self.press_num
-        self.press_num = self.press_num + 1 
+        self.press_num = self.press_num + 1
         #updatelcd()
 buttoninput = ButtonInput()
-#Setup callback function buttonpress to appen on press of push button    
+#Setup callback function buttonpress to appen on press of push button
 
 def get_uptime():
     with open('/proc/uptime', 'r') as f:
@@ -80,14 +80,15 @@ def local_IP():
 	network = "eth0"
 	if IP == "":
 		p = Popen(wlan0, shell=True, stdout=PIPE)
-		IP = p.communicate()[0].rstrip('\n')
+		IP = p.communicate()[0]
+		IP = IP[:-1]
 		network = "wlan0"
 	return {IP , network}
 #IP, network = local_IP()
 #print IP
 #print network
 
-#Test to see if we have working internet connection to emoncms.org 
+#Test to see if we have working internet connection to emoncms.org
 import socket
 REMOTE_SERVER = "www.google.com"
 def is_connected():
@@ -104,9 +105,9 @@ def is_connected():
   return False
 #print 'Internet connected? %s' %(is_connected())
 
-# write to I2C LCD 
+# write to I2C LCD
 def updatelcd():
-    lcd.lcd_display_string( string_lenth(lcd_string1, 16),1) # line 1- make sure string is 16 characters long to fill LED 
+    lcd.lcd_display_string( string_lenth(lcd_string1, 16),1) # line 1- make sure string is 16 characters long to fill LED
     lcd.lcd_display_string( string_lenth(lcd_string2, 16),2) # line 2
 #    print lcd_string1
 #    print lcd_string2
@@ -120,26 +121,26 @@ def string_lenth(string, length):
 
 def uptime_days():
     uptime_days = uptime() / 86400
-    threading.Timer(60, uptime_days).start()     # every 60's update uptime display 
+    threading.Timer(60, uptime_days).start()     # every 60's update uptime display
     return(uptime_days)
 
-
+IP, network = local_IP()
  
 while 1:
 
     uptime_days()
 
-    if buttoninput.press_num == 0:   
-        IP, network = local_IP()
+    if buttoninput.press_num == 0:
         if IP == "":
+            IP, network = local_IP()
             lcd_string1 = 'Awaiting Network'
             lcd_string2 = 'Connection......'
 
         if IP != "":
-        	lcd_string1 = '%s connected' % (IP)
-        	lcd_string2 = 'IP: %s' % (network)
+        	lcd_string1 = '%s connected' % (network)
+        	lcd_string2 = 'IP: %s' % (IP)
 
-    #elif buttoninput.press_num == 1:          
+    #elif buttoninput.press_num == 1:
     #    lcd_string1 = 'Checking WAN    '
     #    lcd_string2 = 'Connection......'
         #if is_connected() == True:
@@ -149,15 +150,15 @@ while 1:
         #    lcd_string1 = 'Internet'
         #    lcd_string2 = 'Connection FAIL'
 
-    elif buttoninput.press_num == 1: 
+    elif buttoninput.press_num == 1:
  
         #print uptime('FORMAT_HOUR')
         lcd_string1 = datetime.now().strftime('%b %d %H:%M')
         lcd_string2 =  'Uptime %.2f days' % (uptime_days())
     
-    elif buttoninput.press_num == 2: 
-    	lcd_string1 = 'Power: 563W'  
-        lcd_string2 = 'Today: 1.3KW'      
+    elif buttoninput.press_num == 2:
+    	lcd_string1 = 'Power: 563W'
+        lcd_string2 = 'Today: 1.3KW'
 
     else:
         buttoninput.press_num = 0
