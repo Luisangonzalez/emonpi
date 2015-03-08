@@ -3,7 +3,8 @@
 import lcddriver
 lcd = lcddriver.lcd()
 from subprocess import *
-from time import sleep, strftime
+#from time import sleep, strftime, time
+import time
 from datetime import datetime
 from datetime import timedelta
 from uptime import uptime
@@ -42,10 +43,9 @@ def shutdown():
         lcd.lcd_display_string( string_lenth(lcd_string1, 16),1)
         lcd.lcd_display_string( string_lenth(lcd_string2, 16),2)
         sleep(2)
+        lcd.lcd_display_string( string_lenth("Power Off", 16),1)
+        lcd.lcd_display_string( string_lenth("Wait 10s", 16),2)
         lcd.backlight(0)
-        lcd.lcd_clear()
-        lcd.lcd_display_string( string_lenth("Power", 16),1)
-        lcd.lcd_display_string( string_lenth("Off", 16),2)
         sleep(2)
         call('halt', shell=False)
         sys.exit() #end script
@@ -55,10 +55,12 @@ class ButtonInput():
     def __init__(self):
         GPIO.add_event_detect(16, GPIO.RISING, callback=self.buttonPress, bouncetime=300)
         self.press_num = 0
+        self.time_pressed = 0
     def buttonPress(self,channel):
         print self.press_num
         self.press_num = self.press_num + 1
-        #updatelcd()
+        self.time_pressed=time.time()
+        print self.time_pressed
 buttoninput = ButtonInput()
 #Setup callback function buttonpress to appen on press of push button
 
@@ -125,10 +127,23 @@ def uptime_days():
     return(uptime_days)
 
 IP, network = local_IP()
+
+buttoninput.time_pressed = time.time() + 10.0  # Keep backlight on for 10's at first boot
+backlight_flag = 1
  
 while 1:
 
     uptime_days()
+
+    if (time.time() - buttoninput.time_pressed > 5.0):
+        if (backlight_flag == 1):
+            lcd.backlight(0)
+            backlight_flag = 0
+    else: 
+        if (backlight_flag == 0):
+            lcd.backlight(1)
+            backlight_flag = 1
+
 
     if buttoninput.press_num == 0:
         if IP == "":
